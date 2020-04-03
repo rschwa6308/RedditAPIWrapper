@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 import concurrent.futures
 
-from Utilities import fetch_data, build_url_params
+from RedditAPIWrapper.Utilities import fetch_data, build_url_params
 
 
 # API-related Constants
