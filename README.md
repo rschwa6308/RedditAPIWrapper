@@ -1,5 +1,5 @@
 # Reddit-API-Wrapper
-This library provides a seamless python interface for accessing the unoffical Reddit API graciously hosted by https://pushshift.io/. It includes functions for downloading arbitrarily large sets of comments and submissions subject to a number of search criteria.
+This library provides a seamless python interface for accessing the unoffical Reddit API hosted by https://pushshift.io/. It includes functions for downloading arbitrarily large sets of comments and submissions subject to a number of search criteria.
 
 If you intend to use this wrapper heavily, please consider [supporting](https://pushshift.io/donations/) the API's maintainers.
 
