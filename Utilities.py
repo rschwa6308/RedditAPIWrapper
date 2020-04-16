@@ -92,12 +92,12 @@ def daterange(start_date, end_date):
 
 # Takes a filename (including the path) and a list of data
 # Writes the data (seperated by newlines) to the specified location
-def write_list_to_file(filename, data):
+def write_list_to_file(filename, data, mode='w'):
     dirname = os.path.dirname(filename)
     if not os.path.exists(dirname):
         os.makedirs(dirname, exist_ok=True)
     
-    with open(filename, 'w') as f:
+    with open(filename, mode) as f:
         f.write('\n'.join(data))
 
 
