@@ -14,7 +14,9 @@ NUM_RESULTS_LIMIT = 10**5       # sanity limit to help avoid never-ending recurs
 # num_results <= min(count, NUM_RESULTS_PER_CALL)
 def search_submissions_base(query=None, title_query=None, selftext_query=None, ids=None, count=None, fields=None, sort_attribute=None, sort_rev=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], num_comments_range=[None, None], printing=True):
     base_url = 'https://api.pushshift.io/reddit/search/submission/?'
-    params = build_url_params(query=query, title_query=title_query, selftext_query=selftext_query, ids=ids, count=count, fields=fields, sort_attribute=sort_attribute, sort_rev=sort_rev, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, num_comments_range=num_comments_range)
+    params = build_url_params(
+        query=query, title_query=title_query, selftext_query=selftext_query, ids=ids, count=count, fields=fields, sort_attribute=sort_attribute, sort_rev=sort_rev, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, num_comments_range=num_comments_range
+    )
     results = fetch_data(base_url, params=params, printing=printing)['data']
     return results
 
@@ -23,7 +25,9 @@ def search_submissions_base(query=None, title_query=None, selftext_query=None, i
 # num_results <= min(count, NUM_RESULTS_PER_CALL)
 def search_comments_base(query=None, ids=None, count=None, fields=None, sort_attribute=None, sort_rev=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], printing=True):
     base_url = 'https://api.pushshift.io/reddit/search/comment/?'
-    params = build_url_params(query=query, ids=ids, count=count, fields=fields, sort_attribute=sort_attribute, sort_rev=sort_rev, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range)
+    params = build_url_params(
+        query=query, ids=ids, count=count, fields=fields, sort_attribute=sort_attribute, sort_rev=sort_rev, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range
+    )
     results = fetch_data(base_url, params=params, printing=printing)['data']
     return results
 
@@ -72,7 +76,9 @@ def search_comments(query=None, ids=None, count=None, fields=None, sort_attribut
 
 # Helper function for search_submissions
 def search_submissions_helper(query=None, title_query=None, selftext_query=None, ids=None, count=None, fields=None, sort_attribute=None, sort_rev=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], num_comments_range=[None, None], printing=True):
-    num_results = count_submissions(query=query, title_query=title_query, selftext_query=selftext_query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, num_comments_range=num_comments_range, printing=printing)
+    num_results = count_submissions(
+        query=query, title_query=title_query, selftext_query=selftext_query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, num_comments_range=num_comments_range, printing=printing
+    )
 
     if num_results == 0: return []
     
@@ -96,7 +102,9 @@ def search_submissions_helper(query=None, title_query=None, selftext_query=None,
 
 # Helper function for search_comments
 def search_comments_helper(query=None, ids=None, count=None, fields=None, sort_attribute=None, sort_rev=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], printing=True):
-    num_results = count_comments(query=query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, printing=printing)
+    num_results = count_comments(
+        query=query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, printing=printing
+    )
 
     if num_results == 0: return []
     
@@ -122,7 +130,9 @@ def search_comments_helper(query=None, ids=None, count=None, fields=None, sort_a
 # Note: Only use for time periods > 1 day. If < 1 day, use the aggregation feature for batched results
 def count_submissions(query=None, title_query=None, selftext_query=None, ids=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], num_comments_range=[None, None], printing=True):
     base_url = 'https://api.pushshift.io/reddit/search/submission/?'
-    params = build_url_params(query=query, title_query=title_query, selftext_query=selftext_query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, num_comments_range=num_comments_range)
+    params = build_url_params(
+        query=query, title_query=title_query, selftext_query=selftext_query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, num_comments_range=num_comments_range
+    )
     if False: # query:   # look in metadata for total number of results (TODO: fix metadata issue)
         params['size'], params['metadata'] = 0, True
         results = fetch_data(base_url, params=params, printing=printing)['metadata']['total_results']
@@ -143,7 +153,9 @@ def count_submissions(query=None, title_query=None, selftext_query=None, ids=Non
 # Note: Only use for time periods > 1 day. If < 1 day, use the aggregation feature for batched results
 def count_comments(query=None, ids=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], printing=True):
     base_url = 'https://api.pushshift.io/reddit/search/comment/?'
-    params = build_url_params(query=query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range)
+    params = build_url_params(
+        query=query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range
+    )
     if False: # query:   # look in metadata for total number of results (TODO: fix metadata issue)
         params['size'], params['metadata'] = 0, True
         results = fetch_data(base_url, params=params, printing=printing)['metadata']['total_results']
