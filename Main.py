@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 import concurrent.futures
 
-from Utilities import fetch_data, build_url_params
+from RedditAPIWrapper.Utilities import fetch_data
 
 
 # API-related Constants
@@ -10,26 +10,22 @@ NUM_RESULTS_PER_CALL = 1000     # limit set by API on max number of results retu
 NUM_RESULTS_LIMIT = 10**5       # sanity limit to help avoid never-ending recursions
 
 
-# Access the '/reddit/search/submissions' endpoint once to fetch submission data
+# Access the '/reddit/search/submissions' endpoint to fetch submission data
 # num_results <= min(count, NUM_RESULTS_PER_CALL)
 def search_submissions_base(query=None, title_query=None, selftext_query=None, ids=None, count=None, fields=None, sort_attribute=None, sort_rev=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], num_comments_range=[None, None], printing=True):
     base_url = 'https://api.pushshift.io/reddit/search/submission/?'
-    params = build_url_params(
-        query=query, title_query=title_query, selftext_query=selftext_query, ids=ids, count=count, fields=fields, sort_attribute=sort_attribute, sort_rev=sort_rev, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, num_comments_range=num_comments_range
-    )
-    results = fetch_data(base_url, params=params, printing=printing)['data']
-    return results
+    kwargs = {'query': query, 'title_query': title_query, 'selftext_query': selftext_query, 'ids': ids, 'count': count, 'fields': fields, 'sort_attribute': sort_attribute, 'sort_rev': sort_rev, 'authors': authors, 'subreddits': subreddits, 'time_range': time_range, 'score_range': score_range, 'num_comments_range': num_comments_range}
+    results = fetch_data(base_url, kwargs=kwargs, printing=printing)
+    return [item for res in results for item in res['data']]
 
 
 # Access the '/reddit/search/comment' endpoint once to fetch comment data
 # num_results <= min(count, NUM_RESULTS_PER_CALL)
 def search_comments_base(query=None, ids=None, count=None, fields=None, sort_attribute=None, sort_rev=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], printing=True):
     base_url = 'https://api.pushshift.io/reddit/search/comment/?'
-    params = build_url_params(
-        query=query, ids=ids, count=count, fields=fields, sort_attribute=sort_attribute, sort_rev=sort_rev, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range
-    )
-    results = fetch_data(base_url, params=params, printing=printing)['data']
-    return results
+    kwargs = {'query': query, 'ids': ids, 'count': count, 'fields': fields, 'sort_attribute': sort_attribute, 'sort_rev': sort_rev, 'authors': authors, 'subreddits': subreddits, 'time_range': time_range, 'score_range': score_range}
+    results = fetch_data(base_url, kwargs=kwargs, printing=printing)
+    return [item for res in results for item in res['data']]
 
 
 # Access the '/reddit/search/submission' endpoint repeatedly to fetch submission data (num_results <= count < +inf)
@@ -130,42 +126,43 @@ def search_comments_helper(query=None, ids=None, count=None, fields=None, sort_a
 # Note: Only use for time periods > 1 day. If < 1 day, use the aggregation feature for batched results
 def count_submissions(query=None, title_query=None, selftext_query=None, ids=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], num_comments_range=[None, None], printing=True):
     base_url = 'https://api.pushshift.io/reddit/search/submission/?'
-    params = build_url_params(
-        query=query, title_query=title_query, selftext_query=selftext_query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, num_comments_range=num_comments_range
-    )
+
+    kwargs = {'query': query, 'title_query': title_query, 'selftext_query': selftext_query, 'ids': ids, 'authors': authors, 'subreddits': subreddits, 'time_range': time_range, 'score_range': score_range, 'num_comments_range': num_comments_range}
+
     if query:   # look in metadata for total number of results
-        params['size'], params['metadata'] = 0, True
-        results = fetch_data(base_url, params=params, printing=printing)['metadata']['total_results']
-        return results
+        kwargs['size'], kwargs['metadata'] = 0, True
+        results = fetch_data(base_url, kwargs=kwargs, printing=printing)
+        total = sum(res['metadata']['total_results'] for res in results)
     else:       # abuse the aggregation feature to sum results over time range
-        params['aggs'], params['frequency'] = 'created_utc', 'month'
-        results = fetch_data(base_url, params=params, printing=printing)
+        kwargs['aggs'], kwargs['frequency'] = 'created_utc', 'month'
+        results = fetch_data(base_url, kwargs=kwargs, printing=printing)
         try:
-            items = results['aggs']['created_utc']
-            total = sum(month['doc_count'] for month in items)
+            total = sum(item['doc_count'] for res in results for item in res['aggs']['created_utc'])
         except Exception as e:
             total = 0
             if printing: print(f'EXCEPTION: {e}')
-        return total
+    
+    return total
 
 
 # Count the number of comments satisfying the search predicate; slight abuse of the aggregation feature
 # Note: Only use for time periods > 1 day. If < 1 day, use the aggregation feature for batched results
 def count_comments(query=None, ids=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], printing=True):
     base_url = 'https://api.pushshift.io/reddit/search/comment/?'
-    params = build_url_params(
-        query=query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range
-    )
+
+    kwargs = {'query': query, 'ids': ids, 'authors': authors, 'subreddits': subreddits, 'time_range': time_range, 'score_range': score_range}
+
     if query:   # look in metadata for total number of results
-        params['size'], params['metadata'] = 0, True
-        results = fetch_data(base_url, params=params, printing=printing)['metadata']['total_results']
-        return results
+        kwargs['size'], kwargs['metadata'] = 0, True
+        results = fetch_data(base_url, kwargs=kwargs, printing=printing)
+        total = sum(res['metadata']['total_results'] for res in results)
     else:       # abuse the aggregation feature to sum results over time range
-        params['aggs'], params['frequency'] = 'created_utc', 'month'
-        results = fetch_data(base_url, params=params, printing=printing)
+        kwargs['aggs'], kwargs['frequency'] = 'created_utc', 'month'
+        results = fetch_data(base_url, kwargs=kwargs, printing=printing)
         try:
-            items = results['aggs']['created_utc']
-            total = sum(month['doc_count'] for month in items)
-        except:
+            total = sum(item['doc_count'] for res in results for item in res['aggs']['created_utc'])
+        except Exception as e:
             total = 0
-        return total
+            if printing: print(f'EXCEPTION: {e}')
+    
+    return total

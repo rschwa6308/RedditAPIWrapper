@@ -7,17 +7,36 @@ import os
 from datetime import date, datetime, timedelta
 
 
+# class URLTooLongError(Exception):
+#     pass
+
+
 # Wrapper for requests.get; handles 'Too Many Requests' errors; returns response.json()
+# returns a list of response.json's stratified by the longest param
 ATTEMPT_LIMIT = 5
 BASE_SLEEP_DURATION_SECONDS = 0.35  # seems to be lower limit
-def fetch_data(url, params={}, printing=True, attempt=0):
+MAX_URL_LENGTH = 6000
+def fetch_data(url, kwargs={}, printing=True, attempt=0):
     if attempt > ATTEMPT_LIMIT:
         print('\nAttempt limit exceeded.')
         return None
+    
+    params = build_url_params(**kwargs)
 
     # encode url params while still allowing commas; this is unconventional but that's pushshift for ya :/
     encoded_params = [f'{k}={urllib.parse.quote(str(v), safe=",")}' for k, v in params.items()]
     combined_url = url + '&'.join(encoded_params)
+
+    if len(combined_url) > MAX_URL_LENGTH:
+        # stratify by longest list param
+        longest_param = max(('ids', 'authors', 'subreddits'), key=lambda k: len(kwargs[k]) if kwargs[k] else 0)
+        if printing: print(f'URL too long; stratifying request by longest list param: {longest_param} ...')
+        n = len(kwargs[longest_param]) // 2
+        left_val = kwargs[longest_param][:n]
+        right_val = kwargs[longest_param][n:]
+        return fetch_data(url, kwargs={**kwargs, **{longest_param: left_val}}, printing=printing) +\
+               fetch_data(url, kwargs={**kwargs, **{longest_param: right_val}}, printing=printing)
+
     if printing: print(f'\nFetching data from \'{combined_url}\' ...')
 
     try:
@@ -30,7 +49,7 @@ def fetch_data(url, params={}, printing=True, attempt=0):
 
     if response.ok:
         contents = response.json()
-        return contents
+        return [contents]
     else:
         if response.status_code == 429:
             sleep_duration = BASE_SLEEP_DURATION_SECONDS * 2**attempt   # exponentially increase wait time with successive attempts
@@ -44,7 +63,7 @@ def fetch_data(url, params={}, printing=True, attempt=0):
 
 # Given a set of arguments to the '/reddit/search/comment' endpoint, return a dictionary of url parameters
 # For API documentation, see https://github.com/pushshift/api
-def build_url_params(query=None, title_query=None, selftext_query=None, ids=None, count=None, fields=None, sort_attribute=None, sort_rev=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], num_comments_range=[None, None]):
+def build_url_params(query=None, title_query=None, selftext_query=None, ids=None, count=None, fields=None, sort_attribute=None, sort_rev=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], num_comments_range=[None, None], aggs=None, frequency=None):
     params = {}
     
     if query: params['q'] = query
@@ -70,6 +89,9 @@ def build_url_params(query=None, title_query=None, selftext_query=None, ids=None
     if num_comments_range[0]: num_comments_params.append(f'>{num_comments_range[0] - 1}')
     if num_comments_range[1]: num_comments_params.append(f'<{num_comments_range[1] + 1}')
     params['num_comments'] = ','.join(num_comments_params)
+
+    if aggs: params['aggs'] = aggs
+    if frequency: params['frequency'] = frequency
 
     return {k: v for k, v in params.items() if v}
 
