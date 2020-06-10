@@ -1,5 +1,5 @@
-from Main import *
-from Utilities import pretty_print, daterange
+from RedditAPIWrapper.Main import *
+from RedditAPIWrapper.Utilities import pretty_print, daterange
 
 from datetime import date, datetime, timedelta
 from random import shuffle
@@ -10,9 +10,15 @@ MIN_SAMPLES = 10    # minimum number of unique days sampled
 # Sample submissions uniformly over the given time range
 def sample_submissions(query=None, title_query=None, selftext_query=None, ids=None, count=1000, fields=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], num_comments_range=[None, None], printing=True):
     base_url = 'https://api.pushshift.io/reddit/search/submission/?'
-    params = build_url_params(query=query, title_query=title_query, selftext_query=selftext_query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, num_comments_range=num_comments_range)
-    params['aggs'], params['frequency'] = 'created_utc', 'day'
-    agg_results = fetch_data(base_url, params=params, printing=printing)['aggs']['created_utc']
+
+    kwargs =  {'query': query, 'title_query': title_query, 'selftext_query': selftext_query, 'ids': ids, 'count': count, 'fields': fields, 'authors': authors, 'subreddits': subreddits, 'time_range': time_range, 'score_range': score_range, 'num_comments_range': num_comments_range}
+
+    kwargs['aggs'], kwargs['frequency'] = 'created_utc', 'day'
+    agg_results = fetch_data(base_url, kwargs=kwargs, printing=printing)[0]['aggs']['created_utc']
+
+    # params = build_url_params(query=query, title_query=title_query, selftext_query=selftext_query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range, num_comments_range=num_comments_range)
+    # params['aggs'], params['frequency'] = 'created_utc', 'day'
+    # agg_results = fetch_data(base_url, params=params, printing=printing)['aggs']['created_utc']
 
     start_date = date.fromtimestamp(agg_results[0]['key'])
     end_date = date.fromtimestamp(agg_results[-1]['key'])
@@ -36,11 +42,16 @@ def sample_submissions(query=None, title_query=None, selftext_query=None, ids=No
     return results[:count]
 
 # Sample comments uniformly from the given time range
-def sample_comments(query=None, ids=None, count=1000, fields=None, sort_attribute=None, sort_rev=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], printing=True):
+def sample_comments(query=None, ids=None, count=1000, fields=None, authors=None, subreddits=None, time_range=[None, None], score_range=[None, None], printing=True):
     base_url = 'https://api.pushshift.io/reddit/search/comment/?'
-    params = build_url_params(query=query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range)
-    params['aggs'], params['frequency'] = 'created_utc', 'day'
-    agg_results = fetch_data(base_url, params=params, printing=printing)['aggs']['created_utc']
+
+    kwargs = {'query': query, 'ids': ids, 'fields': fields, 'authors': authors, 'subreddits': subreddits, 'score_range': score_range}
+
+    kwargs['aggs'], kwargs['frequency'] = 'created_utc', 'day'
+    agg_results = fetch_data(base_url, kwargs=kwargs, printing=printing)[0]['aggs']['created_utc']
+    # params = build_url_params(query=query, ids=ids, authors=authors, subreddits=subreddits, time_range=time_range, score_range=score_range)
+    # params['aggs'], params['frequency'] = 'created_utc', 'day'
+    # agg_results = fetch_data(base_url, params=params, printing=printing)['aggs']['created_utc']
 
     start_date = date.fromtimestamp(agg_results[0]['key'])
     end_date = date.fromtimestamp(agg_results[-1]['key'])
